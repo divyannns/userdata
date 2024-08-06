@@ -1,80 +1,64 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const bodyParser = require('body-parser');
-const path = require('path');
+const express = require('express');  
+const mongoose = require('mongoose');  
+const bodyParser = require('body-parser');  
+const path = require('path');  
 
-const app = express();
+const app = express();  
+const port = process.env.PORT || 3000;
 
-// Middleware
-app.use(bodyParser.json());
-app.use(express.static('public'));
+// Middleware  
+ 
+app.use(bodyParser.json()); 
+app.use(express.static(path.join(__dirname, 'public'))); 
 
-// MongoDB connection
-mongoose.connect('mongodb://localhost:27017/webservice',);
+// MongoDB connection  
+mongoose.connect('mongodb://localhost:27017/userDB');  
 
-const db = mongoose.connection;
-db.on('error', console.error.bind(console, 'connection error:'));
-db.once('open', () => {
-    console.log('Connected to MongoDB');
-});
+// User schema  
+const userSchema = new mongoose.Schema({  
+    firstName: { type: String, required: true },  
+    lastName: { type: String, required: true },  
+    mobile: { type: String, required: true, match: /^\d{10}$/ }, 
+    email: { type: String, required: true, unique: true },   
+    address: {  
+        street: String,  
+        city: String,  
+        state: String,  
+        country: String,  
+    },  
+    loginId: { type: String, required: true, unique: true, minlength: 6, maxlength: 8 },  
+    password: { type: String, required: true, minlength:6, maxlength:25 },  
+    creationTime: { type: Date, default: Date.now },  
+    lastUpdated: { type: Date, default: Date.now },  
+});  
 
-// Define User Schema
-const userSchema = new mongoose.Schema({
-    firstName: { type: String, required: true },
-    lastName: { type: String, required: true },
-    mobileNo: { type: String, required: true, match: /^[0-9]{10}$/ },
-    emailId: { type: String, required: true, match: /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/ },
-    address: {
-        street: String,
-        city: String,
-        state: String,
-        country: String
-    },
-    loginId: { type: String, required: true, match: /^[a-zA-Z0-9]{8,}$/ },
-    password: {
-        type: String,
-        validate: {
-            validator: function(v) {
-                return /(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*\W)/.test(v);
-            },
-            message: 'Password must contain at least one lowercase letter, one uppercase letter, and one special character'
-        },
-        minlength: [6, 'Password must be at least 6 characters'],
-        required: [true, 'Password is required']
-    },
-    creationTime: { type: Date, default: Date.now },
-    lastUpdatedOn: { type: Date, default: Date.now }
-});
+// User model  
+const User = mongoose.model('User', userSchema);  
 
-const User = mongoose.model('User', userSchema);
+// API endpoint to save user data  
+app.post('/api/users', async (req, res) => {  
+    const userData = req.body;  
 
-// API Routes
-app.post('/api/users', async (req, res) => {
-    try {
-        const user = new User(req.body);
-        await user.save();
-        res.status(201).send(user);
-    } catch (error) {
-        res.status(400).send(error);
-    }
-});
+    try {  
+        const user = new User(userData);  
+        await user.save();  
+        res.status(201).send('User saved successfully!');  
+    } catch (error) {  
+        res.status(400).send('Error saving user: ' + error.message);  
+    }  
+});  
 
-app.get('/api/users', async (req, res) => {
-    try {
-        const users = await User.find();
-        res.status(200).send(users);
-    } catch (error) {
-        res.status(500).send(error);
-    }
-});
+// API endpoint to retrieve user data  
+app.get('/api/users', async (req, res) => {  
+    try {  
+        const users = await User.find();  
+        res.status(200).json(users);  
+    } catch (error) {  
+        res.status(500).send('Error retrieving users: ' + error.message);  
+    }  
+});  
 
-// Serve the HTML file
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-// Start the server
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+// Start the server  
+app.listen(port, () => {  
+    console.log(`Server is running on http://localhost:${port}`);  
 });
