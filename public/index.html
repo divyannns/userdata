@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Form</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+        }
+        .container {
+            width: 80%;
+            max-width: 800px;
+            margin: 20px;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            margin-top: 10px;
+        }
+        input {
+            margin-top: 5px;
+            padding: 8px;
+            font-size: 1em;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            margin-top: 20px;
+            padding: 10px;
+            font-size: 1em;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <form id="userForm">
+            <label for="firstName">First Name:</label>
+            <input type="text" id="firstName" name="firstName" required>
+
+            <label for="lastName">Last Name:</label>
+            <input type="text" id="lastName" name="lastName" required>
+
+            <label for="mobileNo">Mobile No:</label>
+            <input type="text" id="mobileNo" name="mobileNo" required pattern="\d{10}">
+
+            <label for="emailId">Email ID:</label>
+            <input type="email" id="emailId" name="emailId" required>
+
+            <fieldset>
+                <legend>Address:</legend>
+                <label for="street">Street:</label>
+                <input type="text" id="street" name="street">
+                <label for="city">City:</label>
+                <input type="text" id="city" name="city">
+                <label for="state">State:</label>
+                <input type="text" id="state" name="state">
+                <label for="country">Country:</label>
+                <input type="text" id="country" name="country">
+            </fieldset>
+
+            <label for="loginId">Login ID:</label>
+            <input type="text" id="loginId" name="loginId" required pattern="[a-zA-Z0-9]{8,}">
+
+            <input type="password" name="password" placeholder="Password" required pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*\W).{6,}"><br>
+            <span class="error" id="passwordError"></span><br>
+            
+            <button type="submit">Save</button>
+        </form>
+    </div>
+
+    <div class="container">
+        <h1>Users</h1>
+        <table id="usersTable">
+            <thead>
+                <tr>
+                    <th>First Name</th>
+                    <th>Last Name</th>
+                    <th>Mobile No</th>
+                    <th>Email ID</th>
+                    <th>Address</th>
+                    <th>Login ID</th>
+                    <th>Creation Time</th>
+                    <th>Last Updated On</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <script>
+        $(document).ready(function () {
+            // Handle form submission
+            $('#userForm').on('submit', function (e) {
+                e.preventDefault();
+                const data = $(this).serializeArray().reduce((obj, item) => {
+                    obj[item.name] = item.value;
+                    return obj;
+                }, {});
+                $.ajax({
+                    url: '/api/users',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(data),
+                    success: function (response) {
+                        alert('User saved successfully!');
+                        loadUsers();
+                    },
+                    error: function (error) {
+                        alert('Error saving user: ' + JSON.stringify(error));
+                    }
+                });
+            });
+
+            // Load users on page load
+            function loadUsers() {
+                $.ajax({
+                    url: '/api/users',
+                    type: 'GET',
+                    success: function (response) {
+                        $('#usersTable tbody').empty();
+                        response.forEach(user => {
+                            $('#usersTable tbody').append(`
+                                <tr>
+                                    <td>${user.firstName}</td>
+                                    <td>${user.lastName}</td>
+                                    <td>${user.mobileNo}</td>
+                                    <td>${user.emailId}</td>
+                                    <td>${user.address.street}, ${user.address.city}, ${user.address.state}, ${user.address.country}</td>
+                                    <td>${user.loginId}</td>
+                                    <td>${new Date(user.creationTime).toLocaleString()}</td>
+                                    <td>${new Date(user.lastUpdatedOn).toLocaleString()}</td>
+                                </tr>
+                            `);
+                        });
+                    },
+                    error: function (error) {
+                        alert('Error retrieving users: ' + JSON.stringify(error));
+                    }
+                });
+            }
+
+            // Initial load
+            loadUsers();
+        });
+    </script>
+</body>
+</html>
