@@ -12,7 +12,7 @@ const app = express();
 connectDB();
 app.use(
   cors({
-    origin: "https://form-hrtq.onrender.com",
+    origin: "",
   })
 );
 app.use(bodyParser.json());
