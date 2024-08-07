@@ -1,64 +1,57 @@
-const express = require('express');  
-const mongoose = require('mongoose');  
-const bodyParser = require('body-parser');  
-const path = require('path');  
+const express = require('express');
+const mongoose = require('mongoose');
+const bodyParser = require('body-parser');
+const path = require('path');
+const cors = require('cors');
+require('dotenv').config(); // Load environment variables from .env file
 
-const app = express();  
+const app = express();
 const port = process.env.PORT || 3000;
 
-// Middleware  
- 
-app.use(bodyParser.json()); 
+const User = require('./models/user'); // Import User model from separate file
+
+// Middleware
+app.use(bodyParser.json());
+app.use(cors());
+
+// MongoDB connection
 app.use(express.static(path.join(__dirname, 'public'))); 
 
 // MongoDB connection  
-mongoose.connect('mongodb://localhost:27017/userDB');  
+const username = process.env.MONGODB_USERNAME;
+// const password = process.env.MONGODB_PASSWORD;
 
-// User schema  
-const userSchema = new mongoose.Schema({  
-    firstName: { type: String, required: true },  
-    lastName: { type: String, required: true },  
-    mobile: { type: String, required: true, match: /^\d{10}$/ }, 
-    email: { type: String, required: true, unique: true },   
-    address: {  
-        street: String,  
-        city: String,  
-        state: String,  
-        country: String,  
-    },  
-    loginId: { type: String, required: true, unique: true, minlength: 6, maxlength: 8 },  
-    password: { type: String, required: true, minlength:6, maxlength:25 },  
-    creationTime: { type: Date, default: Date.now },  
-    lastUpdated: { type: Date, default: Date.now },  
-});  
+mongoose.connect = ("mongodb+srv://divyanshu903143453:KExgPu2pWfsKj0yT@cluster0.yjmj5.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0");   
 
-// User model  
-const User = mongoose.model('User', userSchema);  
+// POST Endpoint to create user
+app.post('/api/users', async (req, res) => {
+  try {
+    const user = new User(req.body);
+    await user.save();
+    res.status(201).send(user);
+  } catch (error) {
+    const errorMessages = {};
+    if (error.errors) {
+      for (const key in error.errors) {
+        errorMessages[key] = error.errors[key].message;
+      }
+    }
+    console.error('Error creating user:', errorMessages);
+    res.status(400).send({ message: 'Error creating user', errors: errorMessages });
+  }
+});
 
-// API endpoint to save user data  
-app.post('/api/users', async (req, res) => {  
-    const userData = req.body;  
+// GET Endpoint to retrieve users
+app.get('/api/users', async (req, res) => {
+  try {
+    const users = await User.find();
+    res.status(200).send(users);
+  } catch (error) {
+    console.error('Error retrieving users:', error);
+    res.status(500).send({ message: 'Error retrieving users', error });
+  }
+});
 
-    try {  
-        const user = new User(userData);  
-        await user.save();  
-        res.status(201).send('User saved successfully!');  
-    } catch (error) {  
-        res.status(400).send('Error saving user: ' + error.message);  
-    }  
-});  
-
-// API endpoint to retrieve user data  
-app.get('/api/users', async (req, res) => {  
-    try {  
-        const users = await User.find();  
-        res.status(200).json(users);  
-    } catch (error) {  
-        res.status(500).send('Error retrieving users: ' + error.message);  
-    }  
-});  
-
-// Start the server  
-app.listen(port, () => {  
-    console.log(`Server is running on http://localhost:${port}`);  
+app.listen(port, () => {
+  console.log(`Server running on http://localhost:${port}`);
 });
