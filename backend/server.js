@@ -10,11 +10,11 @@ const app = express();
 
 // Connect to the database
 connectDB();
-// app.use(
+ app.use(
   cors({
-    origin: "",
+    origin: "https://userdata-3.onrender.com",
   })
-// );
+ );
 app.use(bodyParser.json());
 
 app.use(express.static(path.join(__dirname, "public")));
